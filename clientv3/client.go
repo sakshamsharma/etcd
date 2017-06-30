@@ -31,6 +31,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -369,7 +370,11 @@ func newClient(cfg *Config) (*Client, error) {
 	client.balancer = newSimpleBalancer(cfg.Endpoints)
 	// use Endpoints[0] so that for https:// without any tls config given, then
 	// grpc will assume the ServerName is in the endpoint.
-	conn, err := client.dial(cfg.Endpoints[0], grpc.WithBalancer(client.balancer))
+	conn, err := client.dial(cfg.Endpoints[0], grpc.WithBalancer(client.balancer),
+		grpc.WithKeepaliveParams(keepalive.ClientParameters{
+			Time:    30 * time.Second,
+			Timeout: 30 * time.Second,
+		}))
 	if err != nil {
 		client.cancel()
 		client.balancer.Close()
